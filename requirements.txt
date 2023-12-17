@@ -1,0 +1,4 @@
+PySimpleGUI==4.60.5
+pandas==2.1.3
+jugaad-trader==0.19
+platformdirs==4.0.0
