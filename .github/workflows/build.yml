@@ -1,0 +1,45 @@
+name: Build cross platform executables
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macOS-latest ]
+        python-version: [ 3.11 ]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      run: |
+            python -m pip install --upgrade pip
+            pip install -r requirements.txt
+            pip install pyinstaller
+
+    - name: Build
+      run: |
+            pyinstaller --name 'KiteAutoHedgeBot' --windowed main.py --onefile --noconfirm
+
+    - name: Set outputs
+      id: vars
+      run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+    - name: Check outputs
+      run: echo ${{ steps.vars.outputs.sha_short }}
+
+    - name: Upload all artifacts
+      uses: actions/upload-artifact@v3
+      with:
+          name: ${{ runner.os }}-build-${{ steps.vars.outputs.sha_short }}
+          path: dist/
