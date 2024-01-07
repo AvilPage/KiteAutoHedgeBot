@@ -12,6 +12,7 @@ from pprint import pprint
 from typing import Iterable
 
 import PySimpleGUI as sg
+import browser_cookie3
 import pandas as pd
 from jugaad_trader import Zerodha
 from platformdirs import user_data_dir
@@ -50,10 +51,7 @@ def get_layout():
     input_text_size = (10, 1)
     layout = [
         [
-            sg.Text('username', size=(9, 1)), sg.InputText(size=input_text_size, key='username', default_text=''),
-            sg.Text('password', size=(9, 1)), sg.InputText(size=input_text_size, key='password', password_char='*', default_text=''),
-            sg.Text('totp', size=(5, 1)), sg.InputText(size=input_text_size, key='totp'),
-            sg.Submit(button_text='Login', key='login'),
+            sg.Text('User: ', size=input_text_size),
         ],
         [
             sg.Text('Hedge %', size=(8, 1)), sg.InputText(size=(4, 1), key='hedge_percentage', default_text='10'),
@@ -132,19 +130,19 @@ def window_print(*args: Iterable[str]):
 
 
 def try_auto_login():
-    settings = json.load(open(settings_file, 'r'))
-    enc_token = settings.get('enc_token')
-    if not enc_token:
-        return
 
     try:
-        kite = Zerodha()
-        kite.enc_token = enc_token
-        profile = kite.profile()
+        cookie_jar = browser_cookie3.chrome(domain_name='.zerodha.com')
+        enc_token = cookie_jar._cookies['kite.zerodha.com']['/']['enctoken'].value
+        zerodha = Zerodha()
+        zerodha.enc_token = enc_token
+        profile = zerodha.profile()
+        window_print(f'\nWelcome, KiteAutoHedgeBot!')
         window_print(f'\nWelcome, {profile["user_name"]}!')
-        return kite
-    except Exception as e:
-        window_print(f'Error: {e}')
+        return zerodha
+    except SystemExit as e:
+        window_print(f'Open chrome and login again')
+        # window_print(f'Error: {e}')
 
 
 def login(values):
@@ -415,7 +413,7 @@ layout = get_layout()
 window = sg.Window('Auto Hedger', layout, resizable=True, font=font, finalize=True)
 
 
-window_print(f'settings_file: {settings_file}')
+# window_print(f'settings_file: {settings_file}')
 # window_print(f'settings: {settings}')
 # apply_settings(window)
 # window['output'].update(f'user_data_dir: {user_data_dir}')
